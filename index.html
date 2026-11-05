@@ -1,1 +1,597 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calculadora de Antelación con Registro de Solicitudes</title>
+  <style>
+    :root {
+      --primary: #1e3a8a;
+      --primary-accent: #2563eb;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --border: #e2e8f0;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 520px;
+      background: var(--card-bg);
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+      border: 1px solid var(--border);
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .header h1 {
+      font-size: 1.4rem;
+      margin: 0 0 8px 0;
+      color: var(--primary);
+    }
+
+    .header p {
+      font-size: 0.88rem;
+      color: #64748b;
+      margin: 0;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+      color: #334155;
+    }
+
+    input[type="date"], select, button, input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 1rem;
+      background-color: #f8fafc;
+      transition: all 0.2s ease;
+    }
+
+    button {
+      background-color: var(--primary-accent);
+      color: white;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      margin-top: 10px;
+      box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
+    }
+
+    button:hover { background-color: #1d4ed8; }
+
+    .btn-action-group {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .btn-cal {
+      background-color: #059669;
+      box-shadow: 0 4px 6px -1px rgba(5, 150, 105, 0.3);
+      flex: 1;
+    }
+
+    .btn-cal:hover { background-color: #047857; }
+
+    .btn-save {
+      background-color: #7c3aed;
+      box-shadow: 0 4px 6px -1px rgba(124, 58, 237, 0.3);
+      flex: 1;
+    }
+
+    .btn-save:hover { background-color: #6d28d9; }
+
+    .result-box {
+      margin-top: 24px;
+      padding: 16px;
+      border-radius: 12px;
+      background-color: #eff6ff;
+      border: 1px solid #bfdbfe;
+      display: none;
+    }
+
+    .result-title {
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #1e40af;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .result-date {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #1e3a8a;
+      margin-bottom: 12px;
+      text-transform: capitalize;
+    }
+
+    .result-details {
+      font-size: 0.85rem;
+      color: #3b82f6;
+      border-top: 1px solid #dbeafe;
+      padding-top: 10px;
+      line-height: 1.4;
+      margin-bottom: 8px;
+    }
+
+    .section-block {
+      margin-top: 24px;
+      border-top: 1px dashed var(--border);
+      padding-top: 20px;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .section-header h3 {
+      font-size: 0.95rem;
+      margin: 0;
+      color: #334155;
+    }
+
+    .festivo-input-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .festivo-input-group input[type="date"] { flex: 1; }
+    .festivo-input-group input[type="text"] { flex: 1.5; }
+
+    .btn-add {
+      width: auto;
+      margin: 0;
+      padding: 0 16px;
+      background-color: #059669;
+      box-shadow: none;
+    }
+
+    .festivos-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+
+    .festivo-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #f1f5f9;
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+      font-size: 0.85rem;
+    }
+
+    .festivo-item.disabled {
+      opacity: 0.5;
+      text-decoration: line-through;
+    }
+
+    .festivo-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .festivo-left input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    .btn-del {
+      background: none;
+      border: none;
+      color: #ef4444;
+      cursor: pointer;
+      font-weight: bold;
+      padding: 2px 6px;
+      margin: 0;
+      width: auto;
+      box-shadow: none;
+    }
+
+    .badge {
+      background: #e0e7ff;
+      color: #3730a3;
+      font-size: 0.75rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .table-container {
+      overflow-x: auto;
+      margin-top: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    th, td {
+      padding: 10px 8px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background-color: #f1f5f9;
+      color: #475569;
+      font-weight: 600;
+    }
+
+    .empty-msg {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      text-align: center;
+      padding: 12px 0;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>Calculadora de Antelación</h1>
+    <p>15 días hábiles + Registro de Solicitudes</p>
+  </div>
+
+  <div class="form-group">
+    <label for="fechaDeseada">Fecha que deseas solicitar:</label>
+    <input type="date" id="fechaDeseada" onchange="autoCalcular()">
+  </div>
+
+  <div class="form-group">
+    <label for="antelacionAviso">¿Cuándo quieres recibir la alarma/aviso?</label>
+    <select id="antelacionAviso">
+      <option value="2" selected>2 horas antes (Día anterior a las 22:00 PM)</option>
+      <option value="4">4 horas antes (Día anterior a las 20:00 PM)</option>
+      <option value="0">En el momento (Mismo día a las 00:01 AM)</option>
+      <option value="12">12 horas antes (Día anterior a las 12:00 PM)</option>
+      <option value="24">24 horas antes (Día anterior a las 00:01 AM)</option>
+    </select>
+  </div>
+
+  <button onclick="calcularFechaLimite()">Calcular Límite de Solicitud</button>
+
+  <div id="resultado" class="result-box">
+    <div class="result-title">Fecha máxima para solicitar:</div>
+    <div id="fechaLimiteTexto" class="result-date"></div>
+    <div id="detallesTexto" class="result-details"></div>
+
+    <div class="btn-action-group">
+      <button class="btn-cal" onclick="descargarICS()">📅 Calendario</button>
+      <button class="btn-save" onclick="guardarEnRegistro()">📌 Guardar en Registro</button>
+    </div>
+  </div>
+
+  <div class="section-block">
+    <div class="section-header">
+      <h3>📋 Registro de Días Pedidos</h3>
+      <span class="badge" id="contadorRegistro">0 guardados</span>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Día a pedir</th>
+            <th>Día de solicitud (Máx)</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody id="tablaRegistro"></tbody>
+      </table>
+      <div id="msgRegistroVacio" class="empty-msg">No hay días guardados en el registro.</div>
+    </div>
+  </div>
+
+  <div class="section-block">
+    <div class="section-header">
+      <h3>Festivos (Marca / Desmarca para aplicar)</h3>
+      <span class="badge" id="contadorFestivos">0 festivos</span>
+    </div>
+
+    <div class="festivo-input-group">
+      <input type="date" id="nuevaFechaFestivo">
+      <input type="text" id="nuevoNombreFestivo" placeholder="Nombre festivo">
+      <button class="btn-add" onclick="agregarFestivo()">+</button>
+    </div>
+
+    <ul id="listaFestivos" class="festivos-list"></ul>
+  </div>
+</div>
+
+<script>
+  let fechaLimiteCalculada = null;
+  let registroSolicitudes = JSON.parse(localStorage.getItem('registro_dias_libres')) || [];
+
+  let festivos = [
+    { fecha: '2026-01-01', nombre: 'Año Nuevo', activo: true },
+    { fecha: '2026-01-06', nombre: 'Epifanía del Señor', activo: true },
+    { fecha: '2026-04-03', nombre: 'Viernes Santo', activo: true },
+    { fecha: '2026-05-01', nombre: 'Fiesta del Trabajo', activo: true },
+    { fecha: '2026-06-24', nombre: 'San Juan (Albacete)', activo: true },
+    { fecha: '2026-08-15', nombre: 'Asunción de la Virgen', activo: true },
+    { fecha: '2026-09-08', nombre: 'Virgen de Los Llanos (Albacete)', activo: true },
+    { fecha: '2026-10-12', nombre: 'Fiesta Nacional de España', activo: true },
+    { fecha: '2026-11-02', nombre: 'Todos los Santos (Traslado)', activo: true },
+    { fecha: '2026-12-06', nombre: 'Día de la Constitución', activo: true },
+    { fecha: '2026-12-08', nombre: 'Inmaculada Concepción', activo: true },
+    { fecha: '2026-12-25', nombre: 'Natividad del Señor', activo: true }
+  ];
+
+  function renderizarFestivos() {
+    const lista = document.getElementById('listaFestivos');
+    const contador = document.getElementById('contadorFestivos');
+    lista.innerHTML = '';
+    
+    festivos.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+
+    festivos.forEach((f, index) => {
+      const li = document.createElement('li');
+      li.className = `festivo-item ${f.activo ? '' : 'disabled'}`;
+      li.innerHTML = `
+        <div class="festivo-left">
+          <input type="checkbox" ${f.activo ? 'checked' : ''} onchange="toggleFestivo(${index})">
+          <span><strong>${f.fecha}</strong> - ${f.nombre}</span>
+        </div>
+        <button class="btn-del" onclick="eliminarFestivo(${index})">✕</button>
+      `;
+      lista.appendChild(li);
+    });
+
+    const activosCount = festivos.filter(f => f.activo).length;
+    contador.textContent = `${activosCount} activos`;
+  }
+
+  function toggleFestivo(index) {
+    festivos[index].activo = !festivos[index].activo;
+    renderizarFestivos();
+    autoCalcular();
+  }
+
+  function agregarFestivo() {
+    const fechaInput = document.getElementById('nuevaFechaFestivo').value;
+    const nombreInput = document.getElementById('nuevoNombreFestivo').value.trim() || 'Festivo';
+
+    if (!fechaInput) {
+      alert("Selecciona una fecha para el festivo.");
+      return;
+    }
+
+    if (festivos.some(f => f.fecha === fechaInput)) {
+      alert("Esta fecha ya está en la lista.");
+      return;
+    }
+
+    festivos.push({ fecha: fechaInput, nombre: nombreInput, activo: true });
+    document.getElementById('nuevaFechaFestivo').value = '';
+    document.getElementById('nuevoNombreFestivo').value = '';
+    renderizarFestivos();
+    autoCalcular();
+  }
+
+  function eliminarFestivo(index) {
+    festivos.splice(index, 1);
+    renderizarFestivos();
+    autoCalcular();
+  }
+
+  function esFestivoActivo(fechaStr) {
+    return festivos.some(f => f.fecha === fechaStr && f.activo);
+  }
+
+  function obtenerNombreFestivo(fechaStr) {
+    const f = festivos.find(item => item.fecha === fechaStr);
+    return f ? f.nombre : '';
+  }
+
+  function autoCalcular() {
+    if (document.getElementById('fechaDeseada').value) {
+      calcularFechaLimite();
+    }
+  }
+
+  function calcularFechaLimite() {
+    const inputFechaStr = document.getElementById('fechaDeseada').value;
+    if (!inputFechaStr) {
+      alert("Por favor, selecciona una fecha.");
+      return;
+    }
+
+    const partes = inputFechaStr.split('-');
+    let fecha = new Date(partes[0], partes[1] - 1, partes[2]);
+
+    let diasHabilesContados = 0;
+    let festivosEncontrados = [];
+
+    while (diasHabilesContados < 15) {
+      fecha.setDate(fecha.getDate() - 1);
+
+      const aaaa = fecha.getFullYear();
+      const mm = String(fecha.getMonth() + 1).padStart(2, '0');
+      const dd = String(fecha.getDate()).padStart(2, '0');
+      const fechaISO = `${aaaa}-${mm}-${dd}`;
+
+      const diaSemana = fecha.getDay();
+
+      if (diaSemana !== 0 && diaSemana !== 6) {
+        if (esFestivoActivo(fechaISO)) {
+          festivosEncontrados.push(`${fechaISO} (${obtenerNombreFestivo(fechaISO)})`);
+        } else {
+          diasHabilesContados++;
+        }
+      }
+    }
+
+    fechaLimiteCalculada = new Date(fecha);
+
+    const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const fechaFormateada = fecha.toLocaleDateString('es-ES', opciones);
+
+    document.getElementById('fechaLimiteTexto').textContent = fechaFormateada;
+
+    let detallesHTML = `Cómputo de <strong>15 días hábiles</strong> completado.<br>Apertura de plazo a las <strong>00:01 AM</strong>.<br>`;
+    if (festivosEncontrados.length > 0) {
+      detallesHTML += `<br>🚩 <strong>Festivos descontados:</strong><br>` + festivosEncontrados.join('<br>');
+    }
+
+    document.getElementById('detallesTexto').innerHTML = detallesHTML;
+    document.getElementById('resultado').style.display = 'block';
+  }
+
+  function guardarEnRegistro() {
+    const fechaPedir = document.getElementById('fechaDeseada').value;
+    const fechaSolicitudText = document.getElementById('fechaLimiteTexto').textContent;
+
+    if (!fechaPedir || !fechaLimiteCalculada) return;
+
+    const partes = fechaPedir.split('-');
+    const dateObj = new Date(partes[0], partes[1] - 1, partes[2]);
+    const fechaPedirFormateada = dateObj.toLocaleDateString('es-ES', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+
+    if (registroSolicitudes.some(r => r.fechaPedir === fechaPedir)) {
+      alert("Esta fecha ya está guardada en el registro.");
+      return;
+    }
+
+    registroSolicitudes.push({
+      fechaPedir: fechaPedir,
+      fechaPedirTexto: fechaPedirFormateada,
+      fechaSolicitudTexto: fechaSolicitudText
+    });
+
+    localStorage.setItem('registro_dias_libres', JSON.stringify(registroSolicitudes));
+    renderizarRegistro();
+  }
+
+  function renderizarRegistro() {
+    const tbody = document.getElementById('tablaRegistro');
+    const msgVacio = document.getElementById('msgRegistroVacio');
+    const contador = document.getElementById('contadorRegistro');
+
+    tbody.innerHTML = '';
+    contador.textContent = `${registroSolicitudes.length} guardados`;
+
+    if (registroSolicitudes.length === 0) {
+      msgVacio.style.display = 'block';
+      return;
+    }
+
+    msgVacio.style.display = 'none';
+
+    registroSolicitudes.forEach((item, index) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${item.fechaPedirTexto}</strong></td>
+        <td>${item.fechaSolicitudTexto}</td>
+        <td><button class="btn-del" onclick="eliminarDelRegistro(${index})">✕</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function eliminarDelRegistro(index) {
+    registroSolicitudes.splice(index, 1);
+    localStorage.setItem('registro_dias_libres', JSON.stringify(registroSolicitudes));
+    renderizarRegistro();
+  }
+
+  function descargarICS() {
+    if (!fechaLimiteCalculada) return;
+
+    const horasAntelacion = parseInt(document.getElementById('antelacionAviso').value, 10);
+    const fechaPedida = document.getElementById('fechaDeseada').value;
+
+    const fechaEvento = new Date(fechaLimiteCalculada);
+    fechaEvento.setHours(0, 1, 0, 0);
+
+    const pad = n => String(n).padStart(2, '0');
+    const strFechaStart = `${fechaEvento.getFullYear()}${pad(fechaEvento.getMonth()+1)}${pad(fechaEvento.getDate())}T000100`;
+    const strFechaEnd = `${fechaEvento.getFullYear()}${pad(fechaEvento.getMonth()+1)}${pad(fechaEvento.getDate())}T003000`;
+
+    let alarmTrigger = `-PT2H1M`;
+    if (horasAntelacion === 4) alarmTrigger = `-PT4H1M`;
+    if (horasAntelacion === 2) alarmTrigger = `-PT2H1M`;
+    if (horasAntelacion === 0) alarmTrigger = `-PT0M`;
+    if (horasAntelacion === 12) alarmTrigger = `-PT12H1M`;
+    if (horasAntelacion === 24) alarmTrigger = `-P1D`;
+
+    const icsContent = 
+`BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Calculadora Antelacion//ES
+BEGIN:VEVENT
+SUMMARY:📌 Abrir solicitud de día libre (Para fecha ${fechaPedida})
+DESCRIPTION:Plazo abierto desde las 00:01 AM. Tramitar solicitud ahora.
+DTSTART:${strFechaStart}
+DTEND:${strFechaEnd}
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Recordatorio de apertura de plazo de día libre
+TRIGGER:${alarmTrigger}
+END:VALARM
+END:VEVENT
+END:VCALENDAR`;
+
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `recordatorio_pedir_dia_${fechaPedida}.ics`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  window.onload = function() {
+    renderizarFestivos();
+    renderizarRegistro();
+  };
+</script>
+
+</body>
+</html>
 
